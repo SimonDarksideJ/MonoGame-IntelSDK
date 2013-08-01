@@ -1,11 +1,20 @@
-﻿using System.Threading;
+﻿/// Header
+/// Util M Depth Sensor retrieval and processing
+/// 
+/// ** Note currently not recognising gestures
+
+
+
+using System.Threading;
 
 namespace SimpleLib
 {
-    public class UtilMCaptureSession : IVideoCapture
+    public class UtilMCaptureDepthSession : IVideoCapture
     {
         PXCMSession session;
         UtilMCapture uc;
+        PXCMGesture gesture;
+
 
         protected int width = 320;
         protected int height = 240;
@@ -54,20 +63,15 @@ namespace SimpleLib
             var ColourSize = new PXCMSizeU32() { width = (uint)Width, height = (uint)Height };
             var DepthSize = new PXCMSizeU32() { width = (uint)Width, height = (uint)Height };
 
-            PXCMCapture.VideoStream.DataDesc.StreamDesc colourStrm = new PXCMCapture.VideoStream.DataDesc.StreamDesc()
-            {
-                format = PXCMImage.ColorFormat.COLOR_FORMAT_RGB32,
-                sizeMin = DepthSize,
-                sizeMax = DepthSize
-            };
-
-            PXCMCapture.VideoStream.DataDesc req = new PXCMCapture.VideoStream.DataDesc();
-
-            req.streams[0] = colourStrm;
+            session.CreateImpl<PXCMGesture>(PXCMGesture.CUID, out gesture);
+            PXCMGesture.ProfileInfo pinfo;
+            gesture.QueryProfile(0, out pinfo);
 
             uc = new UtilMCapture(session);
 
-            uc.LocateStreams(ref req);
+            uc.LocateStreams(ref pinfo.inputs);
+
+            gesture.SetProfile(ref pinfo);
 
             thread = new Thread(
             new ThreadStart(StartCaptureStream));
@@ -76,32 +80,40 @@ namespace SimpleLib
 
         public void StartCaptureStream()
         {
-            PXCMScheduler.SyncPoint sp = null;
-            PXCMImage image = null;
+            PXCMImage[] images = new PXCMImage[PXCMCapture.VideoStream.STREAM_LIMIT];
+
+            PXCMScheduler.SyncPoint[] sps = new PXCMScheduler.SyncPoint[2];
+
             capturing = true;
             while (capturing)
             {
-                if (uc.QueryVideoStream(0).ReadStreamAsync(out image, out sp) < pxcmStatus.PXCM_STATUS_NO_ERROR)
+                if (uc.ReadStreamAsync(images, out sps[0]) < pxcmStatus.PXCM_STATUS_NO_ERROR)
                 {
                     break;
                 }
-                sp.Synchronize();
+
+                gesture.ProcessImageAsync(images, out sps[1]);
+
+                PXCMScheduler.SyncPoint.SynchronizeEx(sps);
 
                 PXCMImage.ImageData data;
-                if (image.AcquireAccess(PXCMImage.Access.ACCESS_READ, PXCMImage.ColorFormat.COLOR_FORMAT_RGB32, out data) >= pxcmStatus.PXCM_STATUS_NO_ERROR)
+                if (images[0].AcquireAccess(PXCMImage.Access.ACCESS_READ, PXCMImage.ColorFormat.COLOR_FORMAT_RGB32, out data) >= pxcmStatus.PXCM_STATUS_NO_ERROR)
                 {
-                    PXCMImage.ImageInfo imageInfo = image.imageInfo;
+                    PXCMImage.ImageInfo imageInfo = images[0].imageInfo;
                     width = (int)imageInfo.width;
                     height = (int)imageInfo.height;
                     BufferSize = width * height * 4;
                     frameRGBA = new byte[BufferSize];
                     frameRGBA = data.ToByteArray(0, BufferSize);
-                    image.ReleaseAccess(ref data);
+                    images[0].ReleaseAccess(ref data);
                 }
+                Helpers.GeoNodesHelper.CaptureGeonodes(gesture);
+                Helpers.GestureHelper.CaptureGestures(gesture);
             }
-            sp.Dispose();
-            image.Dispose();
+            PXCMScheduler.SyncPoint.Dispose(sps);
+            PXCMImage.Dispose(images);
             uc.Dispose();
+            gesture.Dispose();
             session.Dispose();
             Thread.Sleep(2000);
         }

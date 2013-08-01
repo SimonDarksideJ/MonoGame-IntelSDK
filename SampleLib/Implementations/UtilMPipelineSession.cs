@@ -8,10 +8,6 @@ namespace SimpleLib
         UtilMPipeline pp;
         PXCMGesture gesture;
 
-        private PXCMGesture.GeoNode[][] nodes = new PXCMGesture.GeoNode[2][] { new PXCMGesture.GeoNode[11], new PXCMGesture.GeoNode[11] };
-        private PXCMGesture.Gesture[] gestures = new PXCMGesture.Gesture[2];
-
-
         protected int width = 320;
         protected int height = 240;
         protected int DEVICE_ID = 0;
@@ -102,16 +98,10 @@ namespace SimpleLib
                         frameRGBA = data.ToByteArray(0, BufferSize);
                         image.ReleaseAccess(ref data);
                     }
-                    PXCMGesture.GeoNode[] hand_data = new PXCMGesture.GeoNode[5];
-
-                    Geonodes(gesture);
+                    Helpers.GeoNodesHelper.CaptureGeonodes(gesture);
+                    Helpers.GestureHelper.CaptureGestures(gesture);
 
                     pp.ReleaseFrame(); // go fetching the next sample
-
-                    //Testing
-                    var gstr = pp.QueryGesture();
-                    //Geonodes(gstr);
-                    //Gestures(gstr);
                 }
             }
             image.Dispose();
@@ -122,28 +112,6 @@ namespace SimpleLib
             capturing = false;
         }
 
-        private void Geonodes(PXCMGesture gesture)
-        {
-            var status = gesture.QueryNodeData(0, PXCMGesture.GeoNode.Label.LABEL_BODY_HAND_PRIMARY, nodes[0]);
-            gesture.QueryNodeData(0, PXCMGesture.GeoNode.Label.LABEL_BODY_HAND_SECONDARY, nodes[1]);
-            gesture.QueryNodeData(0, PXCMGesture.GeoNode.Label.LABEL_BODY_ELBOW_PRIMARY, out nodes[0][nodes.Length - 1]);
-            gesture.QueryNodeData(0, PXCMGesture.GeoNode.Label.LABEL_BODY_ELBOW_SECONDARY, out nodes[1][nodes.Length - 1]);
-            if (status >= pxcmStatus.PXCM_STATUS_NO_ERROR)
-            {
-                //Do something with Gestures
 
-            }
-        }
-
-        private void Gesture(PXCMGesture gesture)
-        {
-            var status = gesture.QueryGestureData(0, PXCMGesture.GeoNode.Label.LABEL_BODY_HAND_PRIMARY, 0, out gestures[0]);
-            gesture.QueryGestureData(0, PXCMGesture.GeoNode.Label.LABEL_BODY_HAND_SECONDARY, 0, out gestures[1]);
-            if (status >= pxcmStatus.PXCM_STATUS_NO_ERROR)
-            {
-                //Do something with Gestures
-
-            }
-        }
     }
 }

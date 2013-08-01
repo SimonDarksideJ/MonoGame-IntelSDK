@@ -32,8 +32,14 @@ namespace SimpleLib
             ///Ultil M capture - stream only
             //capture = new UtilMCaptureSession();
 
+            //Util M capture - stream and depth - * currently non functional, gestures not recognised
+            //capture = new UtilMCaptureDepthSession();
+
             //Util M Pipeline - stream plus capture
             capture = new UtilMPipelineSession();
+
+            //PXC M Pipeline - only evaluating streams at present
+            //capture = new PXCMCaptureSession();
 
         }
 
