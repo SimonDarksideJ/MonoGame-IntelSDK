@@ -15,3 +15,7 @@ Within the project you have
 I'll keep updating the project as I intend to use the libraries for my own comp entries but the code within is free to use for your own projects.
 Also feel free to fork and add to the project to aid others.
 
+** Update
+Re-factored the GeoNodes and Gesture functions to make them more generic
+Added UtilM Capture Depth test implementation, currently does nto report gestures.  not sure why at this time (it should according to the SDK)
+Added PCXM Capture implementation. heavily WIP at present, only catalogues all available streams from connected devices.
