@@ -52,7 +52,7 @@ namespace SimpleLib
 
         public void Initialise()
         {
-            PXCMSession.CreateInstance(out session);
+            var sts = PXCMSession.CreateInstance(out session);
 
             /* request a color stream */
 
@@ -64,6 +64,12 @@ namespace SimpleLib
             pp.EnableVoiceRecognition();
             pp.EnableImage(PXCMImage.ColorFormat.COLOR_FORMAT_DEPTH, (uint)Width, (uint)Height); // select the stream
 
+            sts = session.CreateImpl<PXCMGesture>(PXCMGesture.CUID, out gesture);
+            if (sts < pxcmStatus.PXCM_STATUS_NO_ERROR)
+            {
+                session.Dispose();
+                return;
+            }
 
             if (pp.Init())
             {
@@ -98,7 +104,7 @@ namespace SimpleLib
                     }
                     PXCMGesture.GeoNode[] hand_data = new PXCMGesture.GeoNode[5];
 
-                    gesture.QueryNodeData(0, PXCMGesture.GeoNode.Label.LABEL_BODY_HAND_PRIMARY | PXCMGesture.GeoNode.Label.LABEL_FINGER_THUMB, hand_data);
+                    Geonodes(gesture);
 
                     pp.ReleaseFrame(); // go fetching the next sample
 
