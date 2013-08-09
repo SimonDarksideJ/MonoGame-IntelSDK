@@ -16,10 +16,6 @@ namespace SimpleLib
 
         PXCMGesture gesture;
 
-        //private PXCMGesture.GeoNode[][] nodes = new PXCMGesture.GeoNode[2][] { new PXCMGesture.GeoNode[11], new PXCMGesture.GeoNode[11] };
-        //private PXCMGesture.Gesture[] gestures = new PXCMGesture.Gesture[2];
-
-
         protected int width = 320;
         protected int height = 240;
         protected int DEVICE_ID = 0;

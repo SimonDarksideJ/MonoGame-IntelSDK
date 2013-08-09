@@ -2,6 +2,8 @@
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
+using System.Diagnostics;
+using System.Text;
 
 #endregion
 
@@ -91,6 +93,37 @@ namespace SimpleLib
             if (capture.FrameRGBA != null && capture.FrameRGBA.Length > 0)
             {
                 DisplayImage = capture.FrameBGRA.ToTexture2D(graphics.GraphicsDevice, capture.Width, capture.Height);
+            }
+            if (((UtilMPipelineSession)capture).Nodes != null)
+            {
+                var nodes = ((UtilMPipelineSession)capture).Nodes;
+                for (int i = 0; i < nodes.Length; i++)
+                {
+                    //for (int j = 0; j < nodes[i].Length; j++)
+                    //{
+                        var node = nodes[i][0];
+                        if (node.body <= 0) continue;
+                        float sz = (0 == 0) ? 10 : ((node.radiusImage > 5) ? node.radiusImage : 5);
+                        var output = new StringBuilder("Label: ");
+                        output.Append(node.body);
+                        output.Append(", Size: ");
+                        output.Append(sz);
+                        output.Append(",Image - X: ");
+                        output.Append(node.positionImage.x);
+                        output.Append(", Y: ");
+                        output.Append(node.positionImage.y);
+                        output.Append(", Z: ");
+                        output.Append(node.positionImage.z);
+                        output.Append(",World - X: ");
+                        output.Append(node.positionWorld.x);
+                        output.Append(", Y: ");
+                        output.Append(node.positionWorld.y);
+                        output.Append(", Z: ");
+                        output.Append(node.positionWorld.z);
+                        
+                        Debug.WriteLine(output);
+                    //}
+                }
             }
 
             base.Update(gameTime);

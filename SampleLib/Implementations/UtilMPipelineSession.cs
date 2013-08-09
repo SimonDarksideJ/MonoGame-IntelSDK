@@ -8,6 +8,9 @@ namespace SimpleLib
         UtilMPipeline pp;
         PXCMGesture gesture;
 
+        PXCMGesture.GeoNode[][] nodes;
+        PXCMGesture.Gesture[] gestures;
+
         protected int width = 320;
         protected int height = 240;
         protected int DEVICE_ID = 0;
@@ -44,6 +47,16 @@ namespace SimpleLib
         public int Height
         {
             get { return height; }
+        }
+
+        public PXCMGesture.GeoNode[][] Nodes
+        {
+            get { return nodes; }
+        }
+
+        public PXCMGesture.Gesture[] Gestures
+        {
+            get { return gestures; }
         }
 
         public void Initialise()
@@ -88,7 +101,7 @@ namespace SimpleLib
                     image = pp.QueryImage(PXCMImage.ImageType.IMAGE_TYPE_DEPTH); // retrieve the sample
 
                     PXCMImage.ImageData data;
-                    if (image.AcquireAccess(PXCMImage.Access.ACCESS_READ, PXCMImage.ColorFormat.COLOR_FORMAT_DEPTH, out data) >= pxcmStatus.PXCM_STATUS_NO_ERROR)
+                    if (image.AcquireAccess(PXCMImage.Access.ACCESS_READ, PXCMImage.ColorFormat.COLOR_FORMAT_RGB32, out data) >= pxcmStatus.PXCM_STATUS_NO_ERROR)
                     {
                         PXCMImage.ImageInfo imageInfo = image.imageInfo;
                         width = (int)imageInfo.width;
@@ -98,8 +111,8 @@ namespace SimpleLib
                         frameRGBA = data.ToByteArray(0, BufferSize);
                         image.ReleaseAccess(ref data);
                     }
-                    Helpers.GeoNodesHelper.CaptureGeonodes(gesture);
-                    Helpers.GestureHelper.CaptureGestures(gesture);
+                    nodes = Helpers.GeoNodesHelper.CaptureGeonodes(gesture);
+                    gestures = Helpers.GestureHelper.CaptureGestures(gesture);
 
                     pp.ReleaseFrame(); // go fetching the next sample
                 }

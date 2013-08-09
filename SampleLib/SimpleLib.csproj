@@ -56,6 +56,8 @@
     <Compile Include="Game1.cs" />
     <Compile Include="Helpers\GeoNodesHelper.cs" />
     <Compile Include="Helpers\GestureHelper.cs" />
+    <Compile Include="Helpers\PCXMImageHelper.cs" />
+    <Compile Include="Implementations\PXCMCaptureSessionMultiple.cs" />
     <Compile Include="Implementations\PXCMCaptureSession.cs" />
     <Compile Include="Implementations\UtilMCaptureDepthSession.cs" />
     <Compile Include="Interfaces\IVideoCapture.cs" />
@@ -76,6 +78,7 @@
     <Reference Include="OpenTK">
       <HintPath>$(MSBuildExtensionsPath)\..\MonoGame\v3.0\Assemblies\WindowsGL\OpenTK.dll</HintPath>
     </Reference>
+    <Reference Include="System.Drawing" />
     <Reference Include="Tao.Sdl">
       <HintPath>$(MSBuildExtensionsPath)\..\MonoGame\v3.0\Assemblies\WindowsGL\Tao.Sdl.dll</HintPath>
     </Reference>
