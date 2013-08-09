@@ -4,9 +4,15 @@ namespace SimpleLib
 {
     interface IVideoCapture
     {
-        //Raw byte streams from camera
-        byte[] FrameRGBA { get; }
-        byte[] FrameBGRA { get; }
+        //Raw depth byte streams from camera - RGBA format
+        byte[] DepthFrame { get; }
+
+        //Raw depth byte streams from camera - RGBA format (Note XNA requires BGRA so convert it using extension)
+        byte[] ColourFrame { get; }
+
+        //Node and Gesture capture points
+        PXCMGesture.GeoNode[][] Nodes { get; }
+        PXCMGesture.Gesture[] Gestures { get; }
 
         //State to indicate camera is streaming
         bool Capturing { get; }
@@ -19,7 +25,7 @@ namespace SimpleLib
         ThreadState State { get; }
 
         //initialise the camera and start streaming
-        void Initialise();
+        void Initialise(CaptureType captureType = CaptureType.IMAGE_TYPE_DEPTH);
 
         //internal use only - direct access to stream gathering function
         void StartCaptureStream();

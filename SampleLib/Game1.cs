@@ -2,6 +2,8 @@
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
+using SimpleLib.Helpers;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Text;
 
@@ -17,9 +19,17 @@ namespace SimpleLib
         GraphicsDeviceManager graphics;
         SpriteBatch spriteBatch;
 
-        Texture2D DisplayImage;
+        Texture2D DepthDisplayImage;
+        Texture2D ColourDisplayImage;
 
         IVideoCapture capture;
+
+        List<PrimitiveLine> foundPoints = new List<PrimitiveLine>();
+
+        CaptureType captureType;
+
+        int scale = 1;
+        Point baseViewSize = new Point(320,240);
 
         public Game1()
             : base()
@@ -31,17 +41,23 @@ namespace SimpleLib
             ///* Note each lib has different capabilities, sone only deal with video streams whilst others have gesture and recognition capabilities
             ///
 
-            ///Ultil M capture - stream only
+            ///Ultil M capture - colour only
+            //captureType = CaptureType.IMAGE_TYPE_COLOUR;
             //capture = new UtilMCaptureSession();
 
-            //Util M capture - stream and depth - * currently non functional, gestures not recognised
+            ///Util M capture - depth display with gesture support
+            //captureType = CaptureType.IMAGE_TYPE_DEPTH;
             //capture = new UtilMCaptureDepthSession();
 
-            //Util M Pipeline - stream plus capture
+            ///Util M Pipeline - stream plus capture
+            captureType = CaptureType.IMAGE_TYPE_COLOUR;
             capture = new UtilMPipelineSession();
 
-            //PXC M Pipeline - only evaluating streams at present
+            ///PXC M Pipeline - only evaluating streams at present
             //capture = new PXCMCaptureSession();
+
+            ///PXC M Pipeline (varient) - only evaluating streams at present
+            //capture = new PXCMCaptureSessionMultiple();
 
         }
 
@@ -54,7 +70,7 @@ namespace SimpleLib
         protected override void Initialize()
         {
             // TODO: Add your initialization logic here
-            capture.Initialise();
+            capture.Initialise(captureType);
             base.Initialize();
         }
 
@@ -66,7 +82,8 @@ namespace SimpleLib
         {
             // Create a new SpriteBatch, which can be used to draw textures.
             spriteBatch = new SpriteBatch(GraphicsDevice);
-            DisplayImage = new Texture2D(GraphicsDevice, capture.Width, capture.Height);
+            DepthDisplayImage = new Texture2D(GraphicsDevice, capture.Width, capture.Height);
+            ColourDisplayImage = new Texture2D(GraphicsDevice, capture.Width, capture.Height);
             // TODO: use this.Content to load your game content here
         }
 
@@ -90,39 +107,32 @@ namespace SimpleLib
                 Exit();
 
             // TODO: Add your update logic here
-            if (capture.FrameRGBA != null && capture.FrameRGBA.Length > 0)
+            if (capture.DepthFrame != null && capture.DepthFrame.Length > 0)
             {
-                DisplayImage = capture.FrameBGRA.ToTexture2D(graphics.GraphicsDevice, capture.Width, capture.Height);
+                DepthDisplayImage = capture.DepthFrame.ToTexture2D(graphics.GraphicsDevice, capture.Width, capture.Height);
             }
-            if (((UtilMPipelineSession)capture).Nodes != null)
+            if (capture.ColourFrame != null && capture.ColourFrame.Length > 0)
             {
-                var nodes = ((UtilMPipelineSession)capture).Nodes;
+                ColourDisplayImage = capture.ColourFrame.ConvertBetweenBGRAandRGBA(capture.Width,capture.Height).ToTexture2D(graphics.GraphicsDevice, capture.Width, capture.Height);
+            }
+            foundPoints.Clear();
+            if (capture != null && capture.Nodes != null)
+            {
+                var nodes = capture.Nodes;
+
                 for (int i = 0; i < nodes.Length; i++)
                 {
-                    //for (int j = 0; j < nodes[i].Length; j++)
-                    //{
-                        var node = nodes[i][0];
+                    for (int j = 0; j < nodes[i].Length; j++)
+                    {
+                        var node = nodes[i][j];
                         if (node.body <= 0) continue;
                         float sz = (0 == 0) ? 10 : ((node.radiusImage > 5) ? node.radiusImage : 5);
-                        var output = new StringBuilder("Label: ");
-                        output.Append(node.body);
-                        output.Append(", Size: ");
-                        output.Append(sz);
-                        output.Append(",Image - X: ");
-                        output.Append(node.positionImage.x);
-                        output.Append(", Y: ");
-                        output.Append(node.positionImage.y);
-                        output.Append(", Z: ");
-                        output.Append(node.positionImage.z);
-                        output.Append(",World - X: ");
-                        output.Append(node.positionWorld.x);
-                        output.Append(", Y: ");
-                        output.Append(node.positionWorld.y);
-                        output.Append(", Z: ");
-                        output.Append(node.positionWorld.z);
-                        
-                        Debug.WriteLine(output);
-                    //}
+                        PrimitiveLine brush = new PrimitiveLine(graphics.GraphicsDevice);
+                        brush.Colour = j > 5 ? Color.Red : Color.Green;
+                        brush.CreateCircle(sz, 10);
+                        brush.Position = new Vector2(node.positionImage.x * scale,node.positionImage.y * scale);
+                        foundPoints.Add(brush);
+                    }
                 }
             }
 
@@ -140,7 +150,12 @@ namespace SimpleLib
             // TODO: Add your drawing code here
 
             spriteBatch.Begin();
-            spriteBatch.Draw(DisplayImage, Vector2.Zero, Color.White);
+            spriteBatch.Draw(DepthDisplayImage, new Rectangle(0, 0, (baseViewSize.X * scale), (baseViewSize.Y * scale)), Color.White);
+            spriteBatch.Draw(ColourDisplayImage, new Rectangle((baseViewSize.X * scale), 0, (baseViewSize.X * scale), (baseViewSize.Y * scale)), Color.White);
+            foreach (var item in foundPoints)
+            {
+                item.Render(spriteBatch);
+            }
             spriteBatch.End();
 
             base.Draw(gameTime);
@@ -149,42 +164,12 @@ namespace SimpleLib
         protected override void Dispose(bool disposing)
         {
             capture.Dispose(disposing);
-            while (capture.State != System.Threading.ThreadState.Stopped) { }
+            if(capture.State != null) while (capture.State != System.Threading.ThreadState.Stopped) { }
             base.Dispose(disposing);
         }
 
 
     }
 
-    public static class IntelExtensionsForXNA
-    {
-        public static Texture2D ToTexture2D(this byte[] input, GraphicsDevice graphics, int width, int height)
-        {
-            Texture2D texture = null;
-            texture = new Texture2D(graphics, width, height);
-            texture.SetData(input);
-            return texture;
 
-        }
-
-        public static byte[] ConvertBetweenBGRAandRGBA(this byte[] input, int pixel_width, int pixel_height)
-        {
-            int offset = 0;
-            var output = new byte[input.Length];
-
-            for (int y = 0; y < pixel_height; y++)
-            {
-                for (int x = 0; x < pixel_width; x++)
-                {
-                    output[offset] = input[offset + 2];
-                    output[offset + 1] = input[offset + 1];
-                    output[offset + 2] = input[offset];
-                    output[offset + 3] = input[offset + 3];
-
-                    offset += 4;
-                }
-            }
-            return output;
-        }
-    }
 }

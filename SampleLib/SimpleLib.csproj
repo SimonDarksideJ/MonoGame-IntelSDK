@@ -57,9 +57,12 @@
     <Compile Include="Helpers\GeoNodesHelper.cs" />
     <Compile Include="Helpers\GestureHelper.cs" />
     <Compile Include="Helpers\PCXMImageHelper.cs" />
+    <Compile Include="Helpers\PrimitiveLine.cs" />
+    <Compile Include="Helpers\XNATextureExtensions.cs" />
     <Compile Include="Implementations\PXCMCaptureSessionMultiple.cs" />
     <Compile Include="Implementations\PXCMCaptureSession.cs" />
     <Compile Include="Implementations\UtilMCaptureDepthSession.cs" />
+    <Compile Include="Interfaces\CaptureTypeEnum.cs" />
     <Compile Include="Interfaces\IVideoCapture.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

@@ -11,9 +11,15 @@ namespace SimpleLib
 {
     class PXCMCaptureSessionMultiple : IVideoCapture
     {
+        CaptureType captureType;
+
         PXCMSession session;
         List< PXCMCapture.Device> cameras = new List<PXCMCapture.Device>();
         List<PXCMCapture.VideoStream> depthStreams = new List<PXCMCapture.VideoStream>();
+
+        PXCMGesture gesture;
+        PXCMGesture.GeoNode[][] nodes;
+        PXCMGesture.Gesture[] gestures;
 
         #region Interface properties
         protected int width = 320;
@@ -22,16 +28,17 @@ namespace SimpleLib
         protected int BufferSize;
         Thread thread;
         private bool capturing;
-        protected byte[] frameRGBA;
+        protected byte[] depthFrame;
+        protected byte[] colourFrame;
 
-        public byte[] FrameBGRA
+        public byte[] DepthFrame
         {
-            get { return frameRGBA.ConvertBetweenBGRAandRGBA(width, height); }
+            get { return depthFrame; }
         }
 
-        public byte[] FrameRGBA
+        public byte[] ColourFrame
         {
-            get { return frameRGBA; }
+            get { return colourFrame; }
         }
 
         public bool Capturing
@@ -53,10 +60,22 @@ namespace SimpleLib
         {
             get { return height; }
         }
+
+        public PXCMGesture.GeoNode[][] Nodes
+        {
+            get { return nodes; }
+        }
+
+        public PXCMGesture.Gesture[] Gestures
+        {
+            get { return gestures; }
+        }
         #endregion
 
-        public void Initialise()
+        public void Initialise(CaptureType captureType = CaptureType.IMAGE_TYPE_DEPTH)
         {
+            this.captureType = captureType;
+
             var sts = PXCMSession.CreateInstance(out session);
 
             PXCMCapture capture;
@@ -122,7 +141,6 @@ namespace SimpleLib
                 thread.Start();
             }
         }
-
 
         public void StartCaptureStream()
         {

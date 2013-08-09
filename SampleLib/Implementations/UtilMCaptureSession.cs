@@ -1,28 +1,37 @@
-﻿using System.Threading;
+﻿using System;
+using System.Threading;
 
 namespace SimpleLib
 {
     public class UtilMCaptureSession : IVideoCapture
     {
+        CaptureType captureType;
+
         PXCMSession session;
         UtilMCapture uc;
 
+        PXCMGesture gesture;
+        PXCMGesture.GeoNode[][] nodes;
+        PXCMGesture.Gesture[] gestures;
+
+        #region Interface properties
         protected int width = 320;
         protected int height = 240;
         protected int DEVICE_ID = 0;
         protected int BufferSize;
         Thread thread;
         private bool capturing;
-        protected byte[] frameRGBA;
+        protected byte[] depthFrame;
+        protected byte[] colourFrame;
 
-        public byte[] FrameBGRA
+        public byte[] DepthFrame
         {
-            get { return frameRGBA.ConvertBetweenBGRAandRGBA(width,height); }
+            get { return depthFrame; }
         }
 
-        public byte[] FrameRGBA
+        public byte[] ColourFrame
         {
-            get { return frameRGBA; }
+            get { return colourFrame; }
         }
 
         public bool Capturing
@@ -44,9 +53,26 @@ namespace SimpleLib
         {
             get { return height; }
         }
-
-        public void Initialise()
+        
+        public PXCMGesture.GeoNode[][] Nodes
         {
+            get { return nodes; }
+        }
+
+        public PXCMGesture.Gesture[] Gestures
+        {
+            get { return gestures; }
+        }
+        #endregion
+
+        public void Initialise(CaptureType captureType = CaptureType.IMAGE_TYPE_DEPTH)
+        {
+            if (captureType == CaptureType.BOTH)
+            {
+                throw new NotSupportedException("This capture type only supports depth or colour and not both");
+            }
+            this.captureType = captureType;
+
             PXCMSession.CreateInstance(out session);
 
             /* request a color stream */
@@ -54,16 +80,30 @@ namespace SimpleLib
             var ColourSize = new PXCMSizeU32() { width = (uint)Width, height = (uint)Height };
             var DepthSize = new PXCMSizeU32() { width = (uint)Width, height = (uint)Height };
 
-            PXCMCapture.VideoStream.DataDesc.StreamDesc colourStrm = new PXCMCapture.VideoStream.DataDesc.StreamDesc()
+            PXCMCapture.VideoStream.DataDesc.StreamDesc strm;
+            if (captureType == CaptureType.IMAGE_TYPE_DEPTH)
             {
-                format = PXCMImage.ColorFormat.COLOR_FORMAT_RGB32,
-                sizeMin = DepthSize,
-                sizeMax = DepthSize
-            };
+                strm = new PXCMCapture.VideoStream.DataDesc.StreamDesc()
+                {
+                    format = PXCMImage.ColorFormat.COLOR_FORMAT_DEPTH,
+                    sizeMin = DepthSize,
+                    sizeMax = DepthSize
+                };
+            }
+            else
+            {
+                strm = new PXCMCapture.VideoStream.DataDesc.StreamDesc()
+                {
+                    format = PXCMImage.ColorFormat.COLOR_FORMAT_RGB32,
+                    sizeMin = ColourSize,
+                    sizeMax = ColourSize
+                };
+            }
+
 
             PXCMCapture.VideoStream.DataDesc req = new PXCMCapture.VideoStream.DataDesc();
 
-            req.streams[0] = colourStrm;
+            req.streams[0] = strm;
 
             uc = new UtilMCapture(session);
 
@@ -76,8 +116,10 @@ namespace SimpleLib
 
         public void StartCaptureStream()
         {
-            PXCMScheduler.SyncPoint sp = null;
             PXCMImage image = null;
+
+            PXCMScheduler.SyncPoint sp = null;
+            
             capturing = true;
             while (capturing)
             {
@@ -86,18 +128,15 @@ namespace SimpleLib
                     break;
                 }
                 sp.Synchronize();
-
-                PXCMImage.ImageData data;
-                if (image.AcquireAccess(PXCMImage.Access.ACCESS_READ, PXCMImage.ColorFormat.COLOR_FORMAT_RGB32, out data) >= pxcmStatus.PXCM_STATUS_NO_ERROR)
+                if (captureType == CaptureType.IMAGE_TYPE_DEPTH)
                 {
-                    PXCMImage.ImageInfo imageInfo = image.imageInfo;
-                    width = (int)imageInfo.width;
-                    height = (int)imageInfo.height;
-                    BufferSize = width * height * 4;
-                    frameRGBA = new byte[BufferSize];
-                    frameRGBA = data.ToByteArray(0, BufferSize);
-                    image.ReleaseAccess(ref data);
+                    depthFrame = Helpers.PCXMImageHelper.PXCMImageToByteArray(image, PXCMImage.ColorFormat.COLOR_FORMAT_RGB32, out width, out height);
                 }
+                else
+                {
+                    colourFrame = Helpers.PCXMImageHelper.PXCMImageToByteArray(image, PXCMImage.ColorFormat.COLOR_FORMAT_RGB32, out width, out height);
+                }
+
             }
             sp.Dispose();
             image.Dispose();

@@ -1,14 +1,32 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Drawing;
 using System.Drawing.Imaging;
-using System.Linq;
-using System.Text;
 
 namespace SimpleLib.Helpers
 {
-    class PCXMImageHelper
+    public class PCXMImageHelper
     {
+        public static byte[] PXCMImageToByteArray(PXCMImage image, PXCMImage.ColorFormat format, out int width, out int height)
+        {
+            PXCMImage.ImageData data;
+            byte[] byteArray = null;
+
+            // set default Width and Height (320,240)
+            width = 320;
+            height = 240;
+
+            if (image.AcquireAccess(PXCMImage.Access.ACCESS_READ, format, out data) >= pxcmStatus.PXCM_STATUS_NO_ERROR)
+            {
+                PXCMImage.ImageInfo imageInfo = image.imageInfo;
+                width = (int)imageInfo.width;
+                height = (int)imageInfo.height;
+                var bufferSize = width * height * 4;
+                byteArray = data.ToByteArray(0, bufferSize);
+                image.ReleaseAccess(ref data);
+            }
+            return byteArray;
+        }
+
         public static Bitmap PXCMImageToBitmap(PXCMImage image)
         {
             Bitmap bitmap = null;

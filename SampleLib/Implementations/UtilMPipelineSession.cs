@@ -1,32 +1,37 @@
-﻿using System.Threading;
+﻿using System;
+using System.Threading;
 
 namespace SimpleLib
 {
     class UtilMPipelineSession : IVideoCapture
     {
+        CaptureType captureType;
+
         PXCMSession session;
         UtilMPipeline pp;
-        PXCMGesture gesture;
 
+        PXCMGesture gesture;
         PXCMGesture.GeoNode[][] nodes;
         PXCMGesture.Gesture[] gestures;
 
+        #region Interface properties
         protected int width = 320;
         protected int height = 240;
         protected int DEVICE_ID = 0;
         protected int BufferSize;
         Thread thread;
         private bool capturing;
-        protected byte[] frameRGBA;
+        protected byte[] depthFrame;
+        protected byte[] colourFrame;
 
-        public byte[] FrameBGRA
+        public byte[] DepthFrame
         {
-            get { return frameRGBA.ConvertBetweenBGRAandRGBA(width, height); }
+            get { return depthFrame; }
         }
 
-        public byte[] FrameRGBA
+        public byte[] ColourFrame
         {
-            get { return frameRGBA; }
+            get { return colourFrame; }
         }
 
         public bool Capturing
@@ -58,20 +63,35 @@ namespace SimpleLib
         {
             get { return gestures; }
         }
+        #endregion
 
-        public void Initialise()
+        public void Initialise(CaptureType captureType = CaptureType.IMAGE_TYPE_DEPTH)
         {
+            if (captureType == CaptureType.BOTH)
+            {
+                throw new NotSupportedException("This capture type only supports depth or colour and not both");
+            }
+            this.captureType = captureType;
+
             var sts = PXCMSession.CreateInstance(out session);
 
             /* request a color stream */
 
-            var ColourSize = new PXCMSizeU32() { width = 320, height = 240 };
+            var ColourSize = new PXCMSizeU32() { width = 640, height = 480 };
             var DepthSize = new PXCMSizeU32() { width = 320, height = 240 };
 
             pp = new UtilMPipeline();
             pp.EnableGesture();
             pp.EnableVoiceRecognition();
-            pp.EnableImage(PXCMImage.ColorFormat.COLOR_FORMAT_DEPTH, (uint)Width, (uint)Height); // select the stream
+            if (captureType == CaptureType.IMAGE_TYPE_DEPTH) // select the stream
+            {
+                pp.EnableImage(PXCMImage.ColorFormat.COLOR_FORMAT_DEPTH); 
+            }
+            else
+            {
+                pp.EnableImage(PXCMImage.ColorFormat.COLOR_FORMAT_RGB32);
+            }
+
 
             sts = session.CreateImpl<PXCMGesture>(PXCMGesture.CUID, out gesture);
             if (sts < pxcmStatus.PXCM_STATUS_NO_ERROR)
@@ -90,7 +110,9 @@ namespace SimpleLib
 
         public void StartCaptureStream()
         {
-            PXCMImage image = null;
+            PXCMImage depthImage = null;
+            PXCMImage colourImage = null;
+
             capturing = true;
             while (capturing)
             {
@@ -98,26 +120,28 @@ namespace SimpleLib
                 else
                 {
                     gesture = pp.QueryGesture();
-                    image = pp.QueryImage(PXCMImage.ImageType.IMAGE_TYPE_DEPTH); // retrieve the sample
-
-                    PXCMImage.ImageData data;
-                    if (image.AcquireAccess(PXCMImage.Access.ACCESS_READ, PXCMImage.ColorFormat.COLOR_FORMAT_RGB32, out data) >= pxcmStatus.PXCM_STATUS_NO_ERROR)
+                    if (captureType == CaptureType.IMAGE_TYPE_DEPTH)
                     {
-                        PXCMImage.ImageInfo imageInfo = image.imageInfo;
-                        width = (int)imageInfo.width;
-                        height = (int)imageInfo.height;
-                        BufferSize = width * height * 4;
-                        frameRGBA = new byte[BufferSize];
-                        frameRGBA = data.ToByteArray(0, BufferSize);
-                        image.ReleaseAccess(ref data);
+                        depthImage = pp.QueryImage(PXCMImage.ImageType.IMAGE_TYPE_DEPTH); // retrieve the sample
+
+                        depthFrame = Helpers.PCXMImageHelper.PXCMImageToByteArray(depthImage, PXCMImage.ColorFormat.COLOR_FORMAT_RGB32, out width, out height);
                     }
+                    else
+                    {
+                        colourImage = pp.QueryImage(PXCMImage.ImageType.IMAGE_TYPE_COLOR); // retrieve the sample
+
+                        colourFrame = Helpers.PCXMImageHelper.PXCMImageToByteArray(colourImage, PXCMImage.ColorFormat.COLOR_FORMAT_RGB32, out width, out height);
+                    }
+
                     nodes = Helpers.GeoNodesHelper.CaptureGeonodes(gesture);
                     gestures = Helpers.GestureHelper.CaptureGestures(gesture);
 
                     pp.ReleaseFrame(); // go fetching the next sample
                 }
             }
-            image.Dispose();
+            if (depthImage != null) depthImage.Dispose();
+            if (colourImage != null) colourImage.Dispose();
+            pp.Dispose();
         }
 
         public void Dispose(bool disposing)
