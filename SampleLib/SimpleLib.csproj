@@ -62,6 +62,10 @@
     <Compile Include="Implementations\PXCMCaptureSessionMultiple.cs" />
     <Compile Include="Implementations\PXCMCaptureSession.cs" />
     <Compile Include="Implementations\UtilMCaptureDepthSession.cs" />
+    <Compile Include="Input\GestureController.cs" />
+    <Compile Include="Input\HandController.cs" />
+    <Compile Include="Input\IController.cs" />
+    <Compile Include="Input\InputHandler.cs" />
     <Compile Include="Interfaces\CaptureTypeEnum.cs" />
     <Compile Include="Interfaces\IVideoCapture.cs" />
     <Compile Include="Program.cs" />

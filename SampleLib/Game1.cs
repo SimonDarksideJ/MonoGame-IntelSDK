@@ -3,6 +3,7 @@ using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
 using SimpleLib.Helpers;
+using SimpleLib.Input;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Text;
@@ -24,7 +25,9 @@ namespace SimpleLib
 
         IVideoCapture capture;
 
-        List<PrimitiveLine> foundPoints = new List<PrimitiveLine>();
+        InputHandler inputHandler = new InputHandler();
+
+        //List<PrimitiveLine> foundPoints = new List<PrimitiveLine>();
 
         CaptureType captureType;
 
@@ -85,6 +88,8 @@ namespace SimpleLib
             DepthDisplayImage = new Texture2D(GraphicsDevice, capture.Width, capture.Height);
             ColourDisplayImage = new Texture2D(GraphicsDevice, capture.Width, capture.Height);
             // TODO: use this.Content to load your game content here
+
+            inputHandler.Hands.EnableDebug(GraphicsDevice);
         }
 
         /// <summary>
@@ -115,26 +120,7 @@ namespace SimpleLib
             {
                 ColourDisplayImage = capture.ColourFrame.ConvertBetweenBGRAandRGBA(capture.Width,capture.Height).ToTexture2D(graphics.GraphicsDevice, capture.Width, capture.Height);
             }
-            foundPoints.Clear();
-            if (capture != null && capture.Nodes != null)
-            {
-                var nodes = capture.Nodes;
-
-                for (int i = 0; i < nodes.Length; i++)
-                {
-                    for (int j = 0; j < nodes[i].Length; j++)
-                    {
-                        var node = nodes[i][j];
-                        if (node.body <= 0) continue;
-                        float sz = (0 == 0) ? 10 : ((node.radiusImage > 5) ? node.radiusImage : 5);
-                        PrimitiveLine brush = new PrimitiveLine(graphics.GraphicsDevice);
-                        brush.Colour = j > 5 ? Color.Red : Color.Green;
-                        brush.CreateCircle(sz, 10);
-                        brush.Position = new Vector2(node.positionImage.x * scale,node.positionImage.y * scale);
-                        foundPoints.Add(brush);
-                    }
-                }
-            }
+            inputHandler.Hands.Recognise(capture.Nodes);
 
             base.Update(gameTime);
         }
@@ -152,10 +138,22 @@ namespace SimpleLib
             spriteBatch.Begin();
             spriteBatch.Draw(DepthDisplayImage, new Rectangle(0, 0, (baseViewSize.X * scale), (baseViewSize.Y * scale)), Color.White);
             spriteBatch.Draw(ColourDisplayImage, new Rectangle((baseViewSize.X * scale), 0, (baseViewSize.X * scale), (baseViewSize.Y * scale)), Color.White);
-            foreach (var item in foundPoints)
+
+            ///Draw all recognised inputs (note, turn on debug in recognise function to enable)
+            //inputHandler.Hands.DebugDraw(spriteBatch);
+
+            ///Draw selective body parts
+            var primaryHand = inputHandler.Hands.GetBodyPart(PXCMGesture.GeoNode.Label.LABEL_BODY_HAND_PRIMARY);
+            if (primaryHand.body > 0)
             {
-                item.Render(spriteBatch);
+                primaryHand.DrawGeoNode(GraphicsDevice).Render(spriteBatch);
             }
+            var secondaryHand = inputHandler.Hands.GetBodyPart(PXCMGesture.GeoNode.Label.LABEL_BODY_HAND_SECONDARY);
+            if (secondaryHand.body > 0)
+            {
+                secondaryHand.DrawGeoNode(GraphicsDevice).Render(spriteBatch);
+            }
+
             spriteBatch.End();
 
             base.Draw(gameTime);
