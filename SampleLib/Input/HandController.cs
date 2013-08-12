@@ -10,20 +10,34 @@ namespace SimpleLib.Input
 {
     public class HandController : IController
     {
+        const int numSmoothSamples = 5;
+
         private GraphicsDevice device;
         private int scale = 1;
         private PXCMGesture.GeoNode[][] nodes = new PXCMGesture.GeoNode[2][] { new PXCMGesture.GeoNode[11], new PXCMGesture.GeoNode[11] };
-        private bool leftHandDetected = false;
-        private PXCMGesture.GeoNode leftHandResting = new PXCMGesture.GeoNode();
-        private PXCMGesture.GeoNode[] leftHandCurrent = new PXCMGesture.GeoNode[11];
-        private PXCMGesture.GeoNode[] leftHandPrevious = new PXCMGesture.GeoNode[11];
-        private bool rightHandDetected = false;
-        private PXCMGesture.GeoNode rightHandResting = new PXCMGesture.GeoNode();
-        private PXCMGesture.GeoNode[] rightHandCurrent = new PXCMGesture.GeoNode[11];
-        private PXCMGesture.GeoNode[] rightHandPrevious = new PXCMGesture.GeoNode[11];
+        private bool primaryHandDetected = false;
+        private PXCMGesture.GeoNode primaryHandResting = new PXCMGesture.GeoNode();
+        private PXCMGesture.GeoNode[] primaryHandCurrent = new PXCMGesture.GeoNode[11];
+        private PXCMGesture.GeoNode[] primaryHandPrevious = new PXCMGesture.GeoNode[11];
+        private Vector3 primaryHandWorldPositionTolerance = Vector3.Zero;
+        private Vector3 primaryHandImagePositionTolerance = Vector3.Zero;
+
+        private Vector3SmoothingSampler primaryHandWorldSmoother = new Vector3SmoothingSampler(numSmoothSamples);
+        private Vector3SmoothingSampler primaryHandImageSmoother = new Vector3SmoothingSampler(numSmoothSamples);
+
+        private bool secondaryHandDetected = false;
+        private PXCMGesture.GeoNode secondaryHandResting = new PXCMGesture.GeoNode();
+        private PXCMGesture.GeoNode[] secondaryHandCurrent = new PXCMGesture.GeoNode[11];
+        private PXCMGesture.GeoNode[] secondaryHandPrevious = new PXCMGesture.GeoNode[11];
+        private Vector3 secondaryHandWorldPositionTolerance = Vector3.Zero;
+        private Vector3 secondaryHandImagePositionTolerance = Vector3.Zero;
+
+        private Vector3SmoothingSampler secondaryHandWorldSmoother = new Vector3SmoothingSampler(numSmoothSamples);
+        private Vector3SmoothingSampler secondaryHandImageSmoother = new Vector3SmoothingSampler(numSmoothSamples);
 
         List<PrimitiveLine> debugPoints = new List<PrimitiveLine>();
-        
+
+
         public void EnableDebug(GraphicsDevice device)
         {
             this.device = device;
@@ -37,8 +51,8 @@ namespace SimpleLib.Input
         public void Initialise(object input)
         {
             CheckInputType(input);
-            leftHandResting = nodes[0][0];
-            rightHandResting = nodes[1][0];
+            primaryHandResting = nodes[0][0];
+            secondaryHandResting = nodes[1][0];
         }
 
         public void Recognise(object input, bool debug = false)
@@ -46,21 +60,26 @@ namespace SimpleLib.Input
             debugPoints.Clear();
             if (input == null)
             {
+                if (primaryHandCurrent[0].confidence > 0)
+                {
+                    primaryHandCurrent = new PXCMGesture.GeoNode[11];
+                    secondaryHandCurrent = new PXCMGesture.GeoNode[11];
+                }
                 return;
             }
 
             CheckInputType(input);
-            leftHandPrevious = leftHandCurrent;
-            leftHandCurrent = nodes[0];
+            primaryHandPrevious = primaryHandCurrent;
+            primaryHandCurrent = nodes[0];
             if (debug)
             {
-                AddDebugDrawImages(leftHandCurrent);
+                AddDebugDrawImages(primaryHandCurrent);
             }
-            rightHandPrevious = rightHandCurrent;
-            rightHandCurrent = nodes[1];
+            secondaryHandPrevious = secondaryHandCurrent;
+            secondaryHandCurrent = nodes[1];
             if (debug)
             {
-                AddDebugDrawImages(rightHandCurrent);
+                AddDebugDrawImages(secondaryHandCurrent);
             }
         }
 
@@ -77,54 +96,113 @@ namespace SimpleLib.Input
             
         }
 
-        public Vector3 LeftHandWorldPosition()
+        public Vector3 PrimaryHandWorldPositionRaw()
         {
-            return new Vector3(leftHandCurrent[0].positionWorld.x, leftHandCurrent[0].positionWorld.z, leftHandCurrent[0].positionWorld.y);
+            return primaryHandCurrent[0].positionWorld.ToVector3();
         }
 
-        public Vector3 LeftHandCapturePosition()
+        public Vector3 PrimaryHandWorldPositionSmoothed()
         {
-            return new Vector3(leftHandCurrent[0].positionImage.x, leftHandCurrent[0].positionImage.y, leftHandCurrent[0].positionImage.z);
+            return primaryHandWorldSmoother.GetValue(primaryHandCurrent[0].positionWorld.ToVector3());
         }
 
-        public Vector3 RightHandWorldPosition()
+        public Vector3 PrimaryHandWorldPositionTolerance(float tolerance)
         {
-            return new Vector3(rightHandCurrent[0].positionWorld.x, rightHandCurrent[0].positionWorld.z, rightHandCurrent[0].positionWorld.y);
+            var newPos = primaryHandWorldSmoother.GetValue(primaryHandCurrent[0].positionWorld.ToVector3());
+            if (IsGreaterThan(primaryHandWorldPositionTolerance, newPos,tolerance))
+            {
+                primaryHandWorldPositionTolerance = newPos;
+            }
+            return primaryHandWorldPositionTolerance;
         }
 
-        public Vector3 RightHandCapturePosition()
+        public Vector3 PrimaryHandImagePositionRaw()
         {
-            return new Vector3(rightHandCurrent[0].positionImage.x, rightHandCurrent[0].positionImage.y, rightHandCurrent[0].positionImage.z);
+            return primaryHandCurrent[0].positionImage.ToVector3();
+        }
+
+        public Vector3 PrimaryHandImagePositionSmoothed()
+        {
+            return primaryHandImageSmoother.GetValue(primaryHandCurrent[0].positionImage.ToVector3());
+        }
+
+        public Vector3 PrimaryHandImagePositionTolerance(float tolerance)
+        {
+            var newPos = primaryHandImageSmoother.GetValue(primaryHandCurrent[0].positionImage.ToVector3());
+            if (IsGreaterThan(primaryHandImagePositionTolerance, newPos, tolerance))
+            {
+                primaryHandImagePositionTolerance = newPos;
+            }
+            return primaryHandImagePositionTolerance;
+        }
+
+        public Vector3 SecondaryHandWorldPositionRaw()
+        {
+            return secondaryHandCurrent[0].positionWorld.ToVector3();
+        }
+
+        public Vector3 SecondaryHandWorldPositionSmoothed()
+        {
+            return secondaryHandWorldSmoother.GetValue(secondaryHandCurrent[0].positionWorld.ToVector3());
+        }
+
+        public Vector3 SecondaryHandWorldPositionTolerance(float tolerance)
+        {
+            var newPos = secondaryHandWorldSmoother.GetValue(secondaryHandCurrent[0].positionWorld.ToVector3());
+            if (IsGreaterThan(secondaryHandWorldPositionTolerance, newPos, tolerance))
+            {
+                secondaryHandWorldPositionTolerance = newPos;
+            }
+            return secondaryHandWorldPositionTolerance;
+        }
+
+        public Vector3 SecondaryHandImagePositionRaw()
+        {
+            return secondaryHandCurrent[0].positionImage.ToVector3();
+        }
+
+        public Vector3 SecondaryHandImagePositionSmoothed()
+        {
+            return secondaryHandImageSmoother.GetValue(secondaryHandCurrent[0].positionImage.ToVector3());
+        }
+
+        public Vector3 SecondaryHandImagePositionTolerance(float tolerance)
+        {
+            var newPos = secondaryHandImageSmoother.GetValue(secondaryHandCurrent[0].positionImage.ToVector3());
+            if (IsGreaterThan(secondaryHandImagePositionTolerance, newPos, tolerance))
+            {
+                secondaryHandImagePositionTolerance = newPos;
+            }
+            return secondaryHandImagePositionTolerance;
         }
 
         public PXCMGesture.GeoNode GetBodyPart(PXCMGesture.GeoNode.Label type, PXCMGesture.GeoNode.Side side = PXCMGesture.GeoNode.Side.LABEL_LEFT)
         {
             switch ((int)type)
             {
-                case 262144: //LABEL_BODY_HAND_LEFT / LABEL_BODY_HAND_PRIMARY
-                    return leftHandCurrent[0];
-                case 524288: //LABEL_BODY_HAND_RIGHT / LABEL_BODY_HAND_SECONDARY
-                    return rightHandCurrent[0];
-                case 16384: // LABEL_BODY_ELBOW_LEFT / LABEL_BODY_ELBOW_PRIMARY
-                    return leftHandCurrent[10];
-                case 32768: // LABEL_BODY_ELBOW_RIGHT / LABEL_BODY_ELBOW_SECONDARY
-                    return rightHandCurrent[10];
+                case 262144: //LABEL_BODY_HAND_primary / LABEL_BODY_HAND_PRIMARY
+                    return primaryHandCurrent[0];
+                case 524288: //LABEL_BODY_HAND_secondary / LABEL_BODY_HAND_SECONDARY
+                    return secondaryHandCurrent[0];
+                case 16384: // LABEL_BODY_ELBOW_primary / LABEL_BODY_ELBOW_PRIMARY
+                    return primaryHandCurrent[10];
+                case 32768: // LABEL_BODY_ELBOW_secondary / LABEL_BODY_ELBOW_SECONDARY
+                    return secondaryHandCurrent[10];
                 case 256: // PXCMGesture.GeoNode.Label.LABEL_MASK_BODY
                 case 255: // PXCMGesture.GeoNode.Label.LABEL_MASK_DETAILS
                     return new PXCMGesture.GeoNode();
                 default: // Fingers
                     if (side == PXCMGesture.GeoNode.Side.LABEL_LEFT)
                     {
-                        return leftHandCurrent[(int)type];
+                        return primaryHandCurrent[(int)type];
                     }
                     else
                     {
-                        return rightHandCurrent[(int)type];
+                        return secondaryHandCurrent[(int)type];
                     }
             }
         }
-
-
+        
         public void DebugDraw(SpriteBatch spritebatch)
         {
             foreach (var item in debugPoints)
@@ -147,6 +225,16 @@ namespace SimpleLib.Input
                 debugPoints.Add(brush);
             }
         }
+
+        private bool IsGreaterThan(Vector3 currPos, Vector3 newPos, float tolerance)
+        {
+            return currPos.X - newPos.X > tolerance ||
+                    -currPos.X + newPos.X > tolerance ||
+                    currPos.Y - newPos.Y > tolerance ||
+                    -currPos.Y + newPos.Y > tolerance ||
+                    currPos.Z - newPos.Z > tolerance ||
+                    -currPos.Z + newPos.Z > tolerance;
+        }
     }
 
     public static class GeoNodeExtensions
@@ -157,6 +245,15 @@ namespace SimpleLib.Input
             brush.Colour = input.side == PXCMGesture.GeoNode.Side.LABEL_LEFT ? Color.Red : Color.Green;
             brush.CreateCircle(10, 10);
             brush.Position = new Vector2(input.positionImage.x * scale, input.positionImage.y * scale);
+            return brush;
+        }
+
+        public static PrimitiveLine DrawGeoNode(this Vector3 input, GraphicsDevice device, Color color, int scale = 1)
+        {
+            PrimitiveLine brush = new PrimitiveLine(device);
+            brush.Colour = color;
+            brush.CreateCircle(10, 10);
+            brush.Position = new Vector2(input.X * scale, input.Y * scale);
             return brush;
         }
     }

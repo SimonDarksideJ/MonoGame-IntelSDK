@@ -58,6 +58,8 @@
     <Compile Include="Helpers\GestureHelper.cs" />
     <Compile Include="Helpers\PCXMImageHelper.cs" />
     <Compile Include="Helpers\PrimitiveLine.cs" />
+    <Compile Include="Helpers\SmoothingSampler.cs" />
+    <Compile Include="Helpers\Vector3PXCMPoint3DF32Extensions.cs" />
     <Compile Include="Helpers\XNATextureExtensions.cs" />
     <Compile Include="Implementations\PXCMCaptureSessionMultiple.cs" />
     <Compile Include="Implementations\PXCMCaptureSession.cs" />
@@ -99,8 +101,11 @@
     </Content>
     <Content Include="Icon.ico" />
   </ItemGroup>
+  <ItemGroup />
   <ItemGroup>
-    <Folder Include="Content\" />
+    <Content Include="Content\DebugFont.xnb">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

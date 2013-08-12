@@ -82,12 +82,12 @@ namespace SimpleLib
 
             pp = new UtilMPipeline();
             pp.EnableGesture();
-            pp.EnableVoiceRecognition();
+            //pp.EnableVoiceRecognition();
             if (captureType == CaptureType.IMAGE_TYPE_DEPTH) // select the stream
             {
                 pp.EnableImage(PXCMImage.ColorFormat.COLOR_FORMAT_DEPTH); 
             }
-            else
+            else if (captureType == CaptureType.IMAGE_TYPE_COLOUR)
             {
                 pp.EnableImage(PXCMImage.ColorFormat.COLOR_FORMAT_RGB32);
             }
@@ -126,7 +126,7 @@ namespace SimpleLib
 
                         depthFrame = Helpers.PCXMImageHelper.PXCMImageToByteArray(depthImage, PXCMImage.ColorFormat.COLOR_FORMAT_RGB32, out width, out height);
                     }
-                    else
+                    else if (captureType == CaptureType.IMAGE_TYPE_COLOUR)
                     {
                         colourImage = pp.QueryImage(PXCMImage.ImageType.IMAGE_TYPE_COLOR); // retrieve the sample
 

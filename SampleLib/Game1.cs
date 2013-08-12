@@ -31,7 +31,10 @@ namespace SimpleLib
 
         CaptureType captureType;
 
+        SpriteFont font;
+
         int scale = 1;
+        int inputTolerance = 2;
         Point baseViewSize = new Point(320,240);
 
         public Game1()
@@ -53,7 +56,7 @@ namespace SimpleLib
             //capture = new UtilMCaptureDepthSession();
 
             ///Util M Pipeline - stream plus capture
-            captureType = CaptureType.IMAGE_TYPE_COLOUR;
+            captureType = CaptureType.NONE;
             capture = new UtilMPipelineSession();
 
             ///PXC M Pipeline - only evaluating streams at present
@@ -88,7 +91,7 @@ namespace SimpleLib
             DepthDisplayImage = new Texture2D(GraphicsDevice, capture.Width, capture.Height);
             ColourDisplayImage = new Texture2D(GraphicsDevice, capture.Width, capture.Height);
             // TODO: use this.Content to load your game content here
-
+            font = Content.Load<SpriteFont>(@"DebugFont");
             inputHandler.Hands.EnableDebug(GraphicsDevice);
         }
 
@@ -139,10 +142,26 @@ namespace SimpleLib
             spriteBatch.Draw(DepthDisplayImage, new Rectangle(0, 0, (baseViewSize.X * scale), (baseViewSize.Y * scale)), Color.White);
             spriteBatch.Draw(ColourDisplayImage, new Rectangle((baseViewSize.X * scale), 0, (baseViewSize.X * scale), (baseViewSize.Y * scale)), Color.White);
 
+            ///Draw Debug Text
+            spriteBatch.DrawString(font, "Left hand Image Pos - Raw: " + inputHandler.Hands.PrimaryHandImagePositionRaw(), new Vector2(20, (baseViewSize.Y * scale) + 20), Color.White);
+            spriteBatch.DrawString(font, "Left hand Image Pos - Smooth: " + inputHandler.Hands.PrimaryHandImagePositionSmoothed(), new Vector2(20, (baseViewSize.Y * scale) + 40), Color.White);
+            spriteBatch.DrawString(font, "Left hand Image Pos - Within Tolerance: " + inputHandler.Hands.PrimaryHandImagePositionTolerance(inputTolerance), new Vector2(20, (baseViewSize.Y * scale) + 60), Color.White);
+            spriteBatch.DrawString(font, "Left hand World Pos - Raw: " + inputHandler.Hands.PrimaryHandWorldPositionRaw(), new Vector2(20, (baseViewSize.Y * scale) + 100), Color.White);
+            spriteBatch.DrawString(font, "Left hand World Pos - Smooth: " + inputHandler.Hands.PrimaryHandWorldPositionSmoothed(), new Vector2(20, (baseViewSize.Y * scale) + 120), Color.White);
+            spriteBatch.DrawString(font, "Left hand World Pos - Within Tolerance: " + inputHandler.Hands.PrimaryHandWorldPositionTolerance(inputTolerance), new Vector2(20, (baseViewSize.Y * scale) + 140), Color.White);
+
+            spriteBatch.DrawString(font, "Right hand Image Pos - Raw " + inputHandler.Hands.SecondaryHandImagePositionRaw(), new Vector2((baseViewSize.X * scale) + 100, (baseViewSize.Y * scale) + 20), Color.White);
+            spriteBatch.DrawString(font, "Right hand Image Pos - Smooth " + inputHandler.Hands.SecondaryHandImagePositionSmoothed(), new Vector2((baseViewSize.X * scale) + 100, (baseViewSize.Y * scale) + 40), Color.White);
+            spriteBatch.DrawString(font, "Right hand Image Pos - Within Tolerance: " + inputHandler.Hands.SecondaryHandImagePositionTolerance(inputTolerance), new Vector2((baseViewSize.X * scale) + 100, (baseViewSize.Y * scale) + 60), Color.White);
+            spriteBatch.DrawString(font, "Right hand World Pos - Raw: " + inputHandler.Hands.SecondaryHandWorldPositionRaw(), new Vector2((baseViewSize.X * scale) + 100, (baseViewSize.Y * scale) + 100), Color.White);
+            spriteBatch.DrawString(font, "Right hand World Pos - Smooth: " + inputHandler.Hands.SecondaryHandWorldPositionSmoothed(), new Vector2((baseViewSize.X * scale) + 100, (baseViewSize.Y * scale) + 120), Color.White);
+            spriteBatch.DrawString(font, "Right hand World Pos - Within Tolerance: " + inputHandler.Hands.SecondaryHandWorldPositionTolerance(inputTolerance), new Vector2((baseViewSize.X * scale) + 100, (baseViewSize.Y * scale) + 140), Color.White);
+
             ///Draw all recognised inputs (note, turn on debug in recognise function to enable)
             //inputHandler.Hands.DebugDraw(spriteBatch);
 
-            ///Draw selective body parts
+            ///Draw selective body parts from nodes
+            /*
             var primaryHand = inputHandler.Hands.GetBodyPart(PXCMGesture.GeoNode.Label.LABEL_BODY_HAND_PRIMARY);
             if (primaryHand.body > 0)
             {
@@ -153,6 +172,11 @@ namespace SimpleLib
             {
                 secondaryHand.DrawGeoNode(GraphicsDevice).Render(spriteBatch);
             }
+            */
+
+            ///Draw specific input handler parts
+            inputHandler.Hands.PrimaryHandImagePositionTolerance(inputTolerance).DrawGeoNode(GraphicsDevice, Color.Red).Render(spriteBatch);
+            inputHandler.Hands.SecondaryHandImagePositionTolerance(inputTolerance).DrawGeoNode(GraphicsDevice, Color.Green).Render(spriteBatch);
 
             spriteBatch.End();
 

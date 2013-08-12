@@ -5,6 +5,7 @@ namespace SimpleLib
     {
         IMAGE_TYPE_DEPTH,
         IMAGE_TYPE_COLOUR,
-        BOTH
+        BOTH,
+        NONE
     }
 }
