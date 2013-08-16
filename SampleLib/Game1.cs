@@ -1,12 +1,11 @@
 ﻿#region Using Statements
+using IntelPCSDK_Manager;
+using IntelPCSDK_Manager.Helpers;
+using IntelPCSDK_Manager.Input;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
-using SimpleLib.Helpers;
-using SimpleLib.Input;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.Text;
+
 
 #endregion
 
@@ -36,6 +35,8 @@ namespace SimpleLib
         int scale = 1;
         int inputTolerance = 2;
         Point baseViewSize = new Point(320,240);
+
+        PrimitiveLine touchBrush;
 
         public Game1()
             : base()
@@ -77,6 +78,7 @@ namespace SimpleLib
         {
             // TODO: Add your initialization logic here
             capture.Initialise(captureType);
+
             base.Initialize();
         }
 
@@ -93,6 +95,10 @@ namespace SimpleLib
             // TODO: use this.Content to load your game content here
             font = Content.Load<SpriteFont>(@"DebugFont");
             inputHandler.Hands.EnableDebug(GraphicsDevice);
+
+            touchBrush = new PrimitiveLine(GraphicsDevice);
+            touchBrush.Colour = Color.Yellow;
+            touchBrush.CreateCircle(10, 10);
         }
 
         /// <summary>
@@ -177,6 +183,15 @@ namespace SimpleLib
             ///Draw specific input handler parts
             inputHandler.Hands.PrimaryHandImagePositionTolerance(inputTolerance).DrawGeoNode(GraphicsDevice, Color.Red).Render(spriteBatch);
             inputHandler.Hands.SecondaryHandImagePositionTolerance(inputTolerance).DrawGeoNode(GraphicsDevice, Color.Green).Render(spriteBatch);
+
+            foreach (var touch in inputHandler.Hands.Touches)
+            {
+                if (touch.State == Microsoft.Xna.Framework.Input.Touch.TouchLocationState.Moved)
+                {
+                    touchBrush.Position = touch.Position;
+                    touchBrush.Render(spriteBatch);
+                }
+            }
 
             spriteBatch.End();
 
