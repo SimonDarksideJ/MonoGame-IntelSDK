@@ -89,9 +89,9 @@
     </Content>
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\IntelPCSDK-Manager\IntelPCSDK-Manager.csproj">
+    <ProjectReference Include="..\IntelPCSDK-Manager\IntelPCSDK-Manager-Windows.csproj">
       <Project>{f4ec0190-ecdb-4fe5-970c-da57f67e7c67}</Project>
-      <Name>IntelPCSDK-Manager</Name>
+      <Name>IntelPCSDK-Manager-Windows</Name>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

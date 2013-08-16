@@ -1,11 +1,9 @@
-﻿using Microsoft.Xna.Framework;
+﻿using IntelPCSDK_Manager.Helpers;
+using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input.Touch;
-using IntelPCSDK_Manager.Helpers;
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 
 namespace IntelPCSDK_Manager.Input
 {
@@ -14,7 +12,7 @@ namespace IntelPCSDK_Manager.Input
         const int numSmoothSamples = 5;
 
         private GraphicsDevice device;
-        private int scale = 1;
+        private double scale = 1;
         private PXCMGesture.GeoNode[][] nodes = new PXCMGesture.GeoNode[2][] { new PXCMGesture.GeoNode[11], new PXCMGesture.GeoNode[11] };
         private bool primaryHandDetected = false;
         private PXCMGesture.GeoNode primaryHandResting = new PXCMGesture.GeoNode();
@@ -39,21 +37,19 @@ namespace IntelPCSDK_Manager.Input
         readonly List<PrimitiveLine> debugPoints = new List<PrimitiveLine>();
 
         readonly TouchLocation[] touches = new TouchLocation[10];
+        bool TouchReset;
 
         public TouchLocation[] Touches
         {
             get { return touches; }
         }
 
-        bool startedTouching;
-
-
         public void EnableDebug(GraphicsDevice device)
         {
             this.device = device;
         }
 
-        public void SetScale(int scale)
+        public void SetScale(double scale)
         {
             this.scale = scale;
         }
@@ -65,36 +61,29 @@ namespace IntelPCSDK_Manager.Input
             secondaryHandResting = nodes[1][0];
         }
 
-        private void SetupTouchCollection()
+        private void ResetTouchCollection()
         {
-            for (int i = 1; i < 5; i++)
+            for (int i = 0; i < 10; i++)
             {
-                touches[i - 1] = new TouchLocation(i - 1, TouchLocationState.Released, Vector2.Zero, TouchLocationState.Released, Vector2.Zero);
-            }
-            for (int i = 6; i < 11; i++)
-            {
-                touches[i - 1] = new TouchLocation(i - 1, TouchLocationState.Released, Vector2.Zero, TouchLocationState.Released, Vector2.Zero);
+                touches[i] = new TouchLocation();
             }
         }
 
         public void Recognise(object input, bool debug = false)
         {
             debugPoints.Clear();
-            if (!startedTouching)
-            {
-                SetupTouchCollection();
-                startedTouching = true;
-            }
             if (input == null)
             {
-                //if (primaryHandCurrent[0].confidence > 0)
-                //{
-                    primaryHandCurrent = new PXCMGesture.GeoNode[11];
-                    secondaryHandCurrent = new PXCMGesture.GeoNode[11];
-                //}
+                primaryHandCurrent = new PXCMGesture.GeoNode[11];
+                secondaryHandCurrent = new PXCMGesture.GeoNode[11];
+                if (!TouchReset)
+                {
+                    ResetTouchCollection();
+                    TouchReset = true;
+                }
                 return;
             }
-
+            TouchReset = false;
             CheckInputType(input);
             primaryHandPrevious = primaryHandCurrent;
             primaryHandCurrent = nodes[0];
@@ -282,7 +271,7 @@ namespace IntelPCSDK_Manager.Input
                 PrimitiveLine brush = new PrimitiveLine(device);
                 brush.Colour = i > 5 ? Color.Red : Color.Green;
                 brush.CreateCircle(sz, 10);
-                brush.Position = new Vector2(node.positionImage.x * scale, node.positionImage.y * scale);
+                brush.Position = new Vector2(node.positionImage.x * (float)scale, node.positionImage.y * (float)scale);
                 debugPoints.Add(brush);
             }
         }

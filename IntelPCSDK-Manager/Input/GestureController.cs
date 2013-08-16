@@ -1,15 +1,19 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 
 namespace IntelPCSDK_Manager.Input
 {
     public class GestureController : IController
     {
         private PXCMGesture.Gesture[] gestures;
-        private PXCMGesture.Gesture leftHand;
-        private PXCMGesture.Gesture rightHand;
+        public PXCMGesture.Gesture PrimaryGesture
+        {
+            get { return gestures != null ? gestures[0] : new PXCMGesture.Gesture(); }
+        }
+        public PXCMGesture.Gesture SecondaryGesture
+        {
+            get { return gestures != null ? gestures[1] : new PXCMGesture.Gesture(); }
+        }
+        public PXCMGesture.Gesture.Label[] DetectedGestures = new PXCMGesture.Gesture.Label[2];
 
         public void Recognise(object input, bool debug = false)
         {
@@ -18,6 +22,8 @@ namespace IntelPCSDK_Manager.Input
                 return;
             }
             CheckInputType(input);
+            DetectedGestures[0] = PrimaryGesture.label;
+            DetectedGestures[1] = SecondaryGesture.label;
         }
 
         private void CheckInputType(object input)
@@ -42,7 +48,7 @@ namespace IntelPCSDK_Manager.Input
             throw new NotImplementedException();
         }
 
-        public void SetScale(int scale)
+        public void SetScale(double scale)
         {
             throw new NotImplementedException();
         }
