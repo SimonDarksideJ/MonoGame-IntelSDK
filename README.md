@@ -1,7 +1,7 @@
 MonoGame-IntelSDK
 =================
 
-Intel Perceptual Camera test project for MonoGame to use with the Intel perceptual camera SDK
+Intel Perceptual Camera test project for MonoGame to use with the Intel perceptual camera SDK (http://intel.ly/16S3kyU)
 
 *Still a work in progress
 
@@ -11,11 +11,18 @@ Within the project you have
 * An interface for creating pipelines
 * An implementation of the UtilMCapture SDK for capturing a colour stream
 * An implementation of the UtilMPipeline to capture a Depth stream and begin processing (currently adding the processing part)
+* A Hand controller for capturing and monitoring finget node recognition
+* A Gesture controller for capturing and monitoring gestures
+* Several helper libraries for wothing with the SDK including
+    *   Input smoothing and averaging
+    *   Image conversion (thanks to simsam7)
+    *   XNA/MonoGame extensions (texture 2D and Vector support)
+
 
 I'll keep updating the project as I intend to use the libraries for my own comp entries but the code within is free to use for your own projects.
 Also feel free to fork and add to the project to aid others.
 
-** Update
-Re-factored the GeoNodes and Gesture functions to make them more generic
-Added UtilM Capture Depth test implementation, currently does nto report gestures.  not sure why at this time (it should according to the SDK)
-Added PCXM Capture implementation. heavily WIP at present, only catalogues all available streams from connected devices.
+Coming Soon
+* additional controllers for types of input, e.g. driving, flight, etc
+* Face support
+* Speech and recognition
